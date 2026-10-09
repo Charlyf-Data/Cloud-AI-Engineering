@@ -1,0 +1,23 @@
+artifact_path: file:///c:/Users/charl/Documents/ynov/IA_DANS_LE_CLOUD/Start/mlruns/1/models/m-47d3e79e904c4694a65589b7e8b90bb8/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.9
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.16.1
+model_id: m-47d3e79e904c4694a65589b7e8b90bb8
+model_size_bytes: 3964
+model_uuid: m-47d3e79e904c4694a65589b7e8b90bb8
+prompts: null
+run_id: b37b7a5613dc46efa26181ac831effb2
+utc_time_created: '2026-10-09 09:09:08.330162'
