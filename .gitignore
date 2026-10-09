@@ -1,1 +1,24 @@
-.venv
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# MLflow (runs et artefacts locaux)
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Modèles sérialisés (lourds, régénérables)
+*.pkl
+*.joblib
+*.skops
+
+# Secrets
+.env
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Données brutes (si volumineuses ou sensibles)
+data/raw/
