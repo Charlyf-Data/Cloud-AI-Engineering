@@ -1,0 +1,39 @@
+services:
+  # Job ponctuel : génère les données (dev) puis entraîne et écrit le modèle dans le volume.
+  train:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: requirements-train.txt
+    image: express-delivery-train:${MODEL_VERSION:-1.0.0}
+    entrypoint: ["sh", "-c"]
+    command: ["python -m express_delivery.main generate && python -m express_delivery.main train"]
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - data:/app/data
+      - artifacts:/app/artifacts
+    healthcheck:
+      disable: true
+    restart: "no"
+
+  # Service API : charge le modèle depuis le volume (lecture seule).
+  api:
+    build: .
+    image: express-delivery-api:${MODEL_VERSION:-1.0.0}
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "${API_PORT:-8000}:${API_PORT:-8000}"
+    volumes:
+      - artifacts:/app/artifacts:ro
+    depends_on:
+      train:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  data:
+  artifacts:

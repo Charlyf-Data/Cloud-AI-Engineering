@@ -1,0 +1,1 @@
+"""Modèles métier et exceptions."""

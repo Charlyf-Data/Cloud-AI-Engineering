@@ -22,3 +22,7 @@ mlflow.db
 
 # Données brutes (si volumineuses ou sensibles)
 data/raw/
+
+# Données générées et artefacts du service
+data/
+artifacts/

@@ -1,7 +1,8 @@
-joblib==1.6.0
-matplotlib==3.11.2
-mlflow==3.16.1
-numpy==2.5.3
-pandas==3.0.6
-scikit_learn==1.9.1
-seaborn==0.13.2
+fastapi==0.142.2
+uvicorn==0.48.0
+pydantic==2.12.5
+pydantic-settings==2.16.1
+polars==1.38.1
+numpy==2.4.1
+scikit-learn==1.8.0
+joblib==1.5.3
