@@ -23,6 +23,7 @@ class OrderService:
         return order_id
 
     def get(self, order_id: str) -> OrderFeatures:
+        """Relit une commande ; lève OrderNotFoundError si elle est inconnue."""
         order = self._store.get(order_id)
         if order is None:
             raise OrderNotFoundError(f"Commande inconnue : {order_id}")
@@ -31,7 +32,9 @@ class OrderService:
     def predict_stored(self, order_id: str) -> None:
         """Tâche de fond : prédit une commande déjà enregistrée et journalise le résultat."""
         if self._predictor is None:
-            logger.warning("Prédiction différée ignorée : modèle indisponible", extra={"context": {"order_id": order_id}})
+            logger.warning(
+                "Prédiction différée ignorée : modèle indisponible", extra={"context": {"order_id": order_id}}
+            )
             return
         prediction = self._predictor.predict(self.get(order_id), order_id)
         logger.info("Prédiction différée calculée", extra={"context": prediction.model_dump(mode="json")})
