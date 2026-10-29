@@ -1,0 +1,155 @@
+# Environnement de prod : données persistantes, flux ERP continu, réentraînement orchestré par Airflow.
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Airflow : http://localhost:8080 (utilisateur admin, mot de passe dans les logs du service airflow).
+name: express-delivery-prod
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  env_file:
+    - path: .env
+      required: false
+
+services:
+  # --- SI existant simulé (tp4). En vraie prod, ces bases existent déjà : seule MONGO_URI change. ---
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: livraison_express
+      POSTGRES_USER: livraison
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-livraison}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U livraison -d livraison_express"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Base analytique (ADR 001) : non exposée sur l'hôte, joignable uniquement sur le réseau interne.
+  mongodb:
+    image: mongo:8
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' localhost:27017/test | grep 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Flux ERP continu ; « healthy » dès que la base analytique contient des commandes.
+  erp-simulator:
+    build:
+      context: ./tp4
+      dockerfile: Dockerfile.erp-simulator
+    environment:
+      POSTGRES_DSN: postgresql://livraison:${POSTGRES_PASSWORD:-livraison}@postgres:5432/livraison_express
+      MONGO_URI: mongodb://mongodb:27017
+      INTERVAL_SECONDS: ${INTERVAL_SECONDS:-5}
+      BATCH_SIZE: ${BATCH_SIZE:-20}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; from pymongo import MongoClient; sys.exit(MongoClient('mongodb://mongodb:27017').livraison_express.orders.estimated_document_count() == 0)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Application ---
+  # Premier ETL et premier entraînement au démarrage (construit aussi l'image lancée ensuite par Airflow).
+  etl:
+    <<: *hardening
+    build:
+      context: .
+      args:
+        REQUIREMENTS: requirements-train.txt
+    image: ${TRAIN_IMAGE:-express-delivery-train:1.0.0}
+    command: ["etl"]
+    environment:
+      APP_ENV: prod
+      MONGO_URI: mongodb://mongodb:27017
+    volumes:
+      - lake:/app/lake
+    depends_on:
+      erp-simulator:
+        condition: service_healthy
+    restart: "no"
+
+  train:
+    <<: *hardening
+    image: ${TRAIN_IMAGE:-express-delivery-train:1.0.0}
+    command: ["train"]
+    environment:
+      APP_ENV: prod
+      DATA_PATH: lake/gold/orders.parquet
+    volumes:
+      - lake:/app/lake:ro
+      - artifacts:/app/artifacts
+    depends_on:
+      etl:
+        condition: service_completed_successfully
+    restart: "no"
+
+  api:
+    <<: *hardening
+    build: .
+    image: ${API_IMAGE:-express-delivery-api:1.0.0}
+    environment:
+      APP_ENV: prod
+      MONGO_URI: mongodb://mongodb:27017
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - artifacts:/app/artifacts:ro
+    mem_limit: 1g
+    pids_limit: 128
+    depends_on:
+      train:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Orchestrateur : lance périodiquement l'image d'entraînement (DAG airflow/dags).
+  airflow:
+    image: apache/airflow:3.1.0
+    command: standalone
+    # Groupe root : accès au socket Docker pour le DockerOperator
+    user: "50000:0"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
+      TRAIN_IMAGE: ${TRAIN_IMAGE:-express-delivery-train:1.0.0}
+      APP_NETWORK: express-delivery-prod_default
+      ARTIFACTS_VOLUME: express-delivery-prod_artifacts
+      LAKE_VOLUME: express-delivery-prod_lake
+      MONGO_URI: mongodb://mongodb:27017
+      RETRAIN_INTERVAL_MINUTES: ${RETRAIN_INTERVAL_MINUTES:-10}
+      RETRAIN_MIN_NEW_ORDERS: ${RETRAIN_MIN_NEW_ORDERS:-100}
+    ports:
+      - "${AIRFLOW_PORT:-8080}:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - airflow_data:/opt/airflow/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      train:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mongo_data:
+  lake:
+  artifacts:
+  airflow_data:
