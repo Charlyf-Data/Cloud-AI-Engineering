@@ -1,0 +1,113 @@
+# Environnement de test : données ERP bornées et éphémères, un ETL et un entraînement uniques puis l'API.
+#   docker compose -f docker-compose.test.yml up --build
+#   docker compose -f docker-compose.test.yml down -v
+name: express-delivery-test
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  # --- SI existant simulé (tp4) : base de production + ERP qui alimente aussi la base analytique ---
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: livraison_express
+      POSTGRES_USER: livraison
+      POSTGRES_PASSWORD: livraison
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U livraison -d livraison_express"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:8
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' localhost:27017/test | grep 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Jeu borné : 2000 commandes 2023+ puis 200 commandes live publiées sans attente, puis arrêt.
+  erp-simulator:
+    build:
+      context: ./tp4
+      dockerfile: Dockerfile.erp-simulator
+    environment:
+      POSTGRES_DSN: postgresql://livraison:livraison@postgres:5432/livraison_express
+      MONGO_URI: mongodb://mongodb:27017
+      POSTGRES_HISTORY_ORDERS: 100
+      RECENT_HISTORY_ORDERS: 2000
+      LIVE_ORDER_LIMIT: 2300
+      BATCH_SIZE: 20
+      INTERVAL_SECONDS: 0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: "no"
+
+  # --- Application ---
+  # MongoDB -> lake raw / rejected / silver / gold (validation ETL)
+  etl:
+    <<: *hardening
+    build:
+      context: .
+      args:
+        REQUIREMENTS: requirements-train.txt
+    image: express-delivery-train:${MODEL_VERSION:-1.1.0}
+    command: ["etl"]
+    environment:
+      APP_ENV: test
+      MONGO_URI: mongodb://mongodb:27017
+    volumes:
+      - lake:/app/lake
+    depends_on:
+      erp-simulator:
+        condition: service_completed_successfully
+    restart: "no"
+
+  # Couche gold -> modèle (validation applicative avant entraînement)
+  train:
+    <<: *hardening
+    image: express-delivery-train:${MODEL_VERSION:-1.1.0}
+    command: ["train"]
+    environment:
+      APP_ENV: test
+      DATA_PATH: lake/gold/orders.parquet
+    volumes:
+      - lake:/app/lake:ro
+      - artifacts:/app/artifacts
+    depends_on:
+      etl:
+        condition: service_completed_successfully
+    restart: "no"
+
+  api:
+    <<: *hardening
+    build: .
+    image: express-delivery-api:${MODEL_VERSION:-1.1.0}
+    environment:
+      APP_ENV: test
+      MONGO_URI: mongodb://mongodb:27017
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - artifacts:/app/artifacts:ro
+    depends_on:
+      train:
+        condition: service_completed_successfully
+    restart: "no"
+
+volumes:
+  lake:
+  artifacts:
