@@ -26,6 +26,7 @@ data/raw/
 # Données générées et artefacts du service
 /data/
 /artifacts/
+/lake/
 
 # Tests
 .pytest_cache/

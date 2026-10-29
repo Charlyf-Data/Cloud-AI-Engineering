@@ -14,8 +14,11 @@ venv
 
 Start/
 ADR/
+tp4/
+airflow/
 data/
 artifacts/
+lake/
 mlruns/
 mlflow.db
 

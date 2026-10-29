@@ -20,7 +20,7 @@ class OrderDataGenerator:
         """Retourne un jeu de commandes complet, cible incluse."""
         rng = np.random.default_rng(self._random_state)
         orders = self._base_columns(rng)
-        return self._add_target(orders, rng).select(REQUIRED_COLUMNS)
+        return self.add_target(orders, rng).select(REQUIRED_COLUMNS)
 
     def _base_columns(self, rng: np.random.Generator) -> pl.DataFrame:
         """Tire les caractéristiques des commandes (ordre des tirages identique au notebook)."""
@@ -52,24 +52,26 @@ class OrderDataGenerator:
             weekend=(pl.col("day_of_week") >= 5).cast(pl.Int64),
         )
 
-    def _latent_score(self) -> pl.Expr:
+    @classmethod
+    def latent_score(cls) -> pl.Expr:
         """Score simulant la décision métier."""
         return (
             2.5
             - 0.18 * pl.col("distance_km")
             - 0.035 * pl.col("preparation_time_min")
             - 0.035 * pl.col("weight_kg")
-            - pl.col("delivery_zone").replace_strict(self._ZONE_PENALTY)
-            - pl.col("weather").replace_strict(self._WEATHER_PENALTY)
+            - pl.col("delivery_zone").replace_strict(cls._ZONE_PENALTY)
+            - pl.col("weather").replace_strict(cls._WEATHER_PENALTY)
             + 1.8 * pl.col("stock_available")
             + 1.3 * pl.col("carrier_capacity")
-            + pl.col("customer_type").replace_strict(self._CUSTOMER_BONUS)
+            + pl.col("customer_type").replace_strict(cls._CUSTOMER_BONUS)
             - 0.40 * pl.col("weekend")
             - 0.08 * (pl.col("hour") - 18).clip(lower_bound=0)
         )
 
-    def _add_target(self, orders: pl.DataFrame, rng: np.random.Generator) -> pl.DataFrame:
+    @classmethod
+    def add_target(cls, orders: pl.DataFrame, rng: np.random.Generator) -> pl.DataFrame:
         """Tire la cible selon la probabilité logistique du score."""
-        score = orders.select(self._latent_score()).to_series().to_numpy()
+        score = orders.select(cls.latent_score()).to_series().to_numpy()
         probability = 1 / (1 + np.exp(-score))
         return orders.with_columns(express_eligible=pl.Series(rng.binomial(1, probability)))

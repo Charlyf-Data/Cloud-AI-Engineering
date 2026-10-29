@@ -43,6 +43,7 @@ class ModelTrainer:
             model_version=self._model_version,
             trained_at=datetime.now(timezone.utc),
             metrics=self._evaluate(pipeline, x_test, y_test),
+            training_rows=df.height,
         )
 
     def params(self) -> dict[str, Any]:

@@ -7,3 +7,4 @@ polars==1.38.1
 numpy==2.4.1
 scikit-learn==1.8.0
 joblib==1.5.3
+pymongo==4.15.3
