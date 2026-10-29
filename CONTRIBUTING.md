@@ -55,7 +55,7 @@ La publication d'une release GitHub sur le tag déclenche la construction de l'i
 1. L'application démarre : `docker compose up -d --build` puis `docker compose ps` affiche `api` en `healthy`.
 2. Les tests et le lint passent : `pip install -r requirements-dev.txt`, puis `pytest` et `pylint src`.
    La CI GitHub Actions les relance sur chaque pull request.
-3. La documentation est à jour (README, `.env.example` si une variable est ajoutée).
+3. La documentation est à jour (README, tableau de configuration si une variable est ajoutée).
 4. La pull request décrit le changement, sa raison et la façon de le tester.
 
 Une pull request est fusionnée après au moins une relecture approuvée et des vérifications automatiques au vert.

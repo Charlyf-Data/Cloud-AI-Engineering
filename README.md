@@ -14,7 +14,6 @@ exposée par une API FastAPI et conteneurisée avec Docker. Le contrat de l'API 
 Prérequis : Docker Desktop (ou Docker Engine + Compose v2).
 
 ```bash
-cp .env.example .env          # facultatif : des valeurs par défaut existent
 docker compose up -d --build  # génère les données, entraîne le modèle, puis démarre l'API
 docker compose ps             # le service api doit être "healthy"
 ```
@@ -116,7 +115,8 @@ docker pull ghcr.io/charlyf-data/cloud-ai-engineering-train:latest  # job d'entr
 
 ## Configuration
 
-Tous les paramètres sont lus depuis les variables d'environnement ou le fichier `.env` (voir `.env.example`).
+Tous les paramètres ont une valeur par défaut. Ils peuvent être surchargés par variable d'environnement ou
+par un fichier `.env` local (non versionné), avec les noms du tableau ci-dessous.
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
