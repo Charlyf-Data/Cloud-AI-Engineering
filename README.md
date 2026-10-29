@@ -1,5 +1,7 @@
 # Cloud-AI-Engineering — Éligibilité à la livraison express
 
+[![CI](https://github.com/Charlyf-Data/Cloud-AI-Engineering/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Charlyf-Data/Cloud-AI-Engineering/actions/workflows/ci.yml)
+
 Service de machine learning qui prédit si une commande peut être livrée en express (dans la journée).
 Il transforme le notebook expérimental `Start/project_test_v1_final_final2.ipynb` en une application Python
 exposée par une API FastAPI et conteneurisée avec Docker. Le contrat de l'API est `Start/openapi.yml`.
@@ -37,6 +39,28 @@ export PYTHONPATH=src                       # PowerShell : $env:PYTHONPATH = "sr
 python -m express_delivery.main generate    # crée data/orders_dataset.csv (données synthétiques)
 python -m express_delivery.main train       # entraîne et écrit artifacts/<MODEL_VERSION>/
 python -m express_delivery.main serve       # démarre l'API
+```
+
+## Tests et qualité
+
+```bash
+pip install -r requirements-dev.txt
+pytest          # 34 tests : données, modèle, contrat de l'API
+pylint src      # seuil minimal : 9/10
+```
+
+## Intégration et livraison continues (GitHub Actions)
+
+| Workflow | Déclenchement | Rôle |
+| --- | --- | --- |
+| `ci.yml` | Pull request ou push vers `develop` / `main` | Pylint, pytest, puis build de l'image Docker |
+| `release.yml` | Publication d'une release GitHub (tag `vX.Y.Z`) | Relance la CI, puis publie les images sur GitHub Container Registry |
+
+Images publiées à chaque release :
+
+```bash
+docker pull ghcr.io/charlyf-data/cloud-ai-engineering:latest        # API
+docker pull ghcr.io/charlyf-data/cloud-ai-engineering-train:latest  # job d'entraînement
 ```
 
 ## Endpoints (séance 1)
