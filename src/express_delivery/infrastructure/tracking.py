@@ -13,8 +13,8 @@ class MlflowTracker(ExperimentTracker):
 
     def track(self, params: dict[str, Any], metrics: dict[str, float], model: Any) -> None:
         # Import local : mlflow n'est installé que dans l'image d'entraînement.
-        import mlflow
-        import mlflow.sklearn
+        import mlflow  # pylint: disable=import-outside-toplevel,import-error
+        import mlflow.sklearn  # pylint: disable=import-outside-toplevel,import-error
 
         mlflow.set_tracking_uri(self._tracking_uri)
         mlflow.set_experiment(self._experiment_name)

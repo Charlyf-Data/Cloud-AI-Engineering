@@ -31,6 +31,7 @@ class TrainingPipeline:
         self._repository = repository
 
     def run(self) -> ModelBundle:
+        """Exécute le pipeline et retourne le modèle entraîné."""
         raw = self._extractor.extract()
         self._validator.check_columns(raw)
         orders = self._cleaner.clean(raw)

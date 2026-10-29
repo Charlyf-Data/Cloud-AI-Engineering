@@ -34,12 +34,15 @@ class Application:
         self._settings = settings
 
     def generate(self) -> None:
+        """Génère le jeu de données synthétique (environnement de dev)."""
         orders = OrderDataGenerator(self._settings.n_rows, self._settings.random_state).generate()
         self._settings.data_path.parent.mkdir(parents=True, exist_ok=True)
         orders.write_csv(self._settings.data_path)
-        logger.info("Jeu de données généré", extra={"context": {"path": str(self._settings.data_path), "rows": orders.height}})
+        context = {"path": str(self._settings.data_path), "rows": orders.height}
+        logger.info("Jeu de données généré", extra={"context": context})
 
     def train(self) -> None:
+        """Entraîne le modèle et sauvegarde les artefacts."""
         TrainingPipeline(
             extractor=PolarsCsvExtractor(self._settings.data_path),
             validator=OrderDataValidator(),
@@ -50,6 +53,7 @@ class Application:
         ).run()
 
     def serve(self) -> None:
+        """Démarre l'API."""
         app = ApiFactory(self._settings, InMemoryOrderStore(), self._repository()).create()
         uvicorn.run(app, host=self._settings.api_host, port=self._settings.api_port, log_config=None)
 
@@ -63,6 +67,7 @@ class Application:
 
 
 def main() -> None:
+    """Analyse la commande CLI, configure le logging et exécute la commande."""
     parser = argparse.ArgumentParser(prog="express_delivery")
     parser.add_argument("command", choices=["generate", "train", "serve"])
     command = parser.parse_args().command
@@ -73,7 +78,7 @@ def main() -> None:
 
     try:
         getattr(Application(settings), command)()
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught  # point unique de gestion des erreurs
         logger.exception("Échec de la commande", extra={"context": {"command": command}})
         sys.exit(1)
 
