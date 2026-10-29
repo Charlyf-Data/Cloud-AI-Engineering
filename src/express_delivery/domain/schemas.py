@@ -29,6 +29,8 @@ REQUIRED_COLUMNS = ["order_id", "order_date", *FEATURE_COLUMNS, TARGET_COLUMN]
 
 
 class Weather(str, Enum):
+    """Conditions météo possibles."""
+
     NORMAL = "normal"
     PLUIE = "pluie"
     NEIGE = "neige"
@@ -36,6 +38,8 @@ class Weather(str, Enum):
 
 
 class DeliveryZone(str, Enum):
+    """Zones de livraison possibles."""
+
     CENTRE = "centre"
     PROCHE_BANLIEUE = "proche_banlieue"
     BANLIEUE = "banlieue"
@@ -43,6 +47,8 @@ class DeliveryZone(str, Enum):
 
 
 class CustomerType(str, Enum):
+    """Types de client possibles."""
+
     STANDARD = "standard"
     PREMIUM = "premium"
 

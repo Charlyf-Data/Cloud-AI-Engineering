@@ -1,0 +1,20 @@
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.pylint.main]
+init-hook = "import sys; sys.path.insert(0, 'src')"
+fail-under = 9.0
+
+[tool.pylint."messages control"]
+# Classes à responsabilité unique (SOLID) : une seule méthode publique est voulue
+disable = ["too-few-public-methods"]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.design]
+# FastAPI injecte les dépendances par paramètres ; le pipeline d'entraînement en reçoit six
+max-args = 7
+max-positional-arguments = 7

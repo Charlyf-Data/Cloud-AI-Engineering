@@ -27,6 +27,7 @@ class ApiFactory:
         self._repository = repository
 
     def create(self) -> FastAPI:
+        """Retourne l'application prête à servir."""
         app = FastAPI(
             title=f"{self._settings.service_name} API",
             version=self._settings.model_version,
@@ -62,16 +63,16 @@ class ApiFactory:
             content["details"] = details
         return JSONResponse(status_code=status_code, content=content)
 
-    async def _validation_error(self, request: Request, exc: RequestValidationError) -> JSONResponse:
+    async def _validation_error(self, _request: Request, exc: RequestValidationError) -> JSONResponse:
         details = [f"{'.'.join(str(part) for part in e['loc'])} : {e['msg']}" for e in exc.errors()]
         return self._error(422, "validation_error", "Requête invalide", details)
 
-    async def _not_found(self, request: Request, exc: OrderNotFoundError) -> JSONResponse:
+    async def _not_found(self, _request: Request, exc: OrderNotFoundError) -> JSONResponse:
         return self._error(404, "not_found", str(exc))
 
-    async def _model_unavailable(self, request: Request, exc: ModelNotLoadedError) -> JSONResponse:
+    async def _model_unavailable(self, _request: Request, exc: ModelNotLoadedError) -> JSONResponse:
         return self._error(503, "model_unavailable", str(exc))
 
-    async def _internal_error(self, request: Request, exc: Exception) -> JSONResponse:
+    async def _internal_error(self, request: Request, _exc: Exception) -> JSONResponse:
         logger.exception("Erreur non gérée", extra={"context": {"path": request.url.path}})
         return self._error(500, "internal_error", "Erreur interne")

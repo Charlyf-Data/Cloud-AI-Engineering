@@ -13,18 +13,22 @@ router = APIRouter()
 
 
 def get_settings(request: Request) -> Settings:
+    """Configuration de l'application."""
     return request.app.state.settings
 
 
 def get_store(request: Request) -> OrderStore:
+    """Stockage des commandes."""
     return request.app.state.store
 
 
 def get_order_service(request: Request) -> OrderService:
+    """Service de collecte des commandes."""
     return request.app.state.order_service
 
 
 def get_predictor(request: Request) -> EligibilityPredictor:
+    """Prédicteur chargé ; lève ModelNotLoadedError (503) s'il est absent."""
     predictor = request.app.state.predictor
     if predictor is None:
         raise ModelNotLoadedError("Le modèle n'est pas chargé.")
@@ -33,6 +37,7 @@ def get_predictor(request: Request) -> EligibilityPredictor:
 
 @router.get("/health", tags=["health"], response_model=HealthStatus, operation_id="getHealth")
 def get_health(settings: Settings = Depends(get_settings)) -> HealthStatus:
+    """Sonde de vivacité : répond 200 tant que le processus est vivant."""
     return HealthStatus(service=settings.service_name, version=settings.model_version)
 
 
@@ -49,6 +54,7 @@ def get_readiness(
     settings: Settings = Depends(get_settings),
     store: OrderStore = Depends(get_store),
 ) -> ReadinessStatus:
+    """Sonde de disponibilité : 200 si le modèle est chargé et le stockage joignable, sinon 503."""
     checks = {
         "model": "loaded" if request.app.state.predictor is not None else "not_loaded",
         "order_store": "reachable" if store.is_reachable() else "unreachable",
@@ -74,6 +80,7 @@ def create_order(
     background_tasks: BackgroundTasks,
     service: OrderService = Depends(get_order_service),
 ) -> OrderAccepted:
+    """Enregistre une commande et planifie sa prédiction en tâche de fond."""
     order_id = service.submit(order)
     background_tasks.add_task(service.predict_stored, order_id)
     return OrderAccepted(order_id=order_id)
@@ -87,6 +94,7 @@ def create_order(
     operation_id="getOrder",
 )
 def get_order(order_id: str, service: OrderService = Depends(get_order_service)) -> OrderFeatures:
+    """Relit une commande collectée."""
     return service.get(order_id)
 
 
@@ -100,4 +108,5 @@ def get_order(order_id: str, service: OrderService = Depends(get_order_service))
 def create_prediction(
     order: OrderFeatures, predictor: EligibilityPredictor = Depends(get_predictor)
 ) -> Prediction:
+    """Prédit de façon synchrone l'éligibilité express d'une commande."""
     return predictor.predict(order, order.order_id or new_order_id())
