@@ -24,8 +24,8 @@ mlflow.db
 data/raw/
 
 # Données générées et artefacts du service
-data/
-artifacts/
+/data/
+/artifacts/
 
 # Tests
 .pytest_cache/
