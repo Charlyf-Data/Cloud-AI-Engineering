@@ -1,4 +1,5 @@
 """Construction de l'application FastAPI."""
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -9,11 +10,10 @@ from fastapi.responses import JSONResponse
 
 from express_delivery.abstractions.model import ModelRepository
 from express_delivery.abstractions.storage import OrderStore
+from express_delivery.api.model_loader import ModelLoader
 from express_delivery.api.routes import router
 from express_delivery.config import Settings
 from express_delivery.domain.exceptions import ModelNotLoadedError, OrderNotFoundError
-from express_delivery.ml.predictor import EligibilityPredictor
-from express_delivery.services.orders import OrderService
 
 logger = logging.getLogger(__name__)
 
@@ -42,19 +42,25 @@ class ApiFactory:
 
     @asynccontextmanager
     async def _lifespan(self, app: FastAPI) -> AsyncIterator[None]:
-        """Charge le modèle au démarrage ; sans modèle, l'API démarre mais n'est pas prête."""
-        predictor = None
-        try:
-            bundle = self._repository.load()
-            predictor = EligibilityPredictor(bundle, self._settings.prediction_threshold)
-            logger.info("Modèle chargé", extra={"context": {"model_version": bundle.model_version}})
-        except ModelNotLoadedError as error:
-            logger.warning(str(error))
+        """Charge le modèle au démarrage puis le recharge périodiquement (réentraînement par l'orchestrateur)."""
         app.state.settings = self._settings
         app.state.store = self._store
-        app.state.predictor = predictor
-        app.state.order_service = OrderService(self._store, predictor)
+        loader = ModelLoader(self._repository, self._store, self._settings.prediction_threshold)
+        loader.load(app.state)
+        refresh = None
+        if self._settings.model_refresh_seconds:
+            refresh = asyncio.create_task(self._refresh_model(loader, app))
         yield
+        if refresh:
+            refresh.cancel()
+
+    async def _refresh_model(self, loader: ModelLoader, app: FastAPI) -> None:
+        while True:
+            await asyncio.sleep(self._settings.model_refresh_seconds)
+            try:
+                loader.load(app.state)
+            except Exception:  # pylint: disable=broad-exception-caught  # artefact en cours d'écriture
+                logger.exception("Rechargement du modèle impossible, l'ancien est conservé")
 
     @staticmethod
     def _error(status_code: int, error: str, message: str, details: list[str] | None = None) -> JSONResponse:

@@ -36,6 +36,7 @@ class FileModelRepository(ModelRepository):
             "numeric_features": NUMERIC_FEATURES,
             "categorical_features": CATEGORICAL_FEATURES,
             "metrics": bundle.metrics,
+            "training_rows": bundle.training_rows,
         }
         (self._directory / self._METADATA_FILE).write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
@@ -50,4 +51,5 @@ class FileModelRepository(ModelRepository):
             model_version=metadata["model_version"],
             trained_at=datetime.fromisoformat(metadata["trained_at"]),
             metrics=metadata["metrics"],
+            training_rows=metadata.get("training_rows", 0),
         )

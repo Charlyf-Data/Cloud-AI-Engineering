@@ -99,6 +99,7 @@ class ModelBundle:
     model_version: str
     trained_at: datetime
     metrics: dict[str, float]
+    training_rows: int = 0
 
 
 def new_order_id() -> str:

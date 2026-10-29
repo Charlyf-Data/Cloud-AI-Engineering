@@ -40,7 +40,7 @@ WORKDIR /app
 # Code et dépendances appartiennent à root : l'utilisateur app ne peut pas les modifier
 COPY --from=builder /opt/venv /opt/venv
 COPY src/express_delivery ./src/express_delivery
-RUN mkdir data artifacts && chown app:app data artifacts
+RUN mkdir data artifacts lake && chown app:app data artifacts lake
 
 USER 10001
 EXPOSE 8000
