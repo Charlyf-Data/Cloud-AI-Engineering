@@ -74,7 +74,7 @@ services:
       context: .
       args:
         REQUIREMENTS: requirements-train.txt
-    image: ${TRAIN_IMAGE:-express-delivery-train:1.0.0}
+    image: ${TRAIN_IMAGE:-express-delivery-train:1.1.0}
     command: ["etl"]
     environment:
       APP_ENV: prod
@@ -88,7 +88,7 @@ services:
 
   train:
     <<: *hardening
-    image: ${TRAIN_IMAGE:-express-delivery-train:1.0.0}
+    image: ${TRAIN_IMAGE:-express-delivery-train:1.1.0}
     command: ["train"]
     environment:
       APP_ENV: prod
@@ -104,7 +104,7 @@ services:
   api:
     <<: *hardening
     build: .
-    image: ${API_IMAGE:-express-delivery-api:1.0.0}
+    image: ${API_IMAGE:-express-delivery-api:1.1.0}
     environment:
       APP_ENV: prod
       MONGO_URI: mongodb://mongodb:27017
@@ -129,7 +129,7 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
-      TRAIN_IMAGE: ${TRAIN_IMAGE:-express-delivery-train:1.0.0}
+      TRAIN_IMAGE: ${TRAIN_IMAGE:-express-delivery-train:1.1.0}
       APP_NETWORK: express-delivery-prod_default
       ARTIFACTS_VOLUME: express-delivery-prod_artifacts
       LAKE_VOLUME: express-delivery-prod_lake

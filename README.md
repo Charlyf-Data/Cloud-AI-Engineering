@@ -24,7 +24,7 @@ L'API est disponible sur <http://localhost:8000> et sa documentation interactive
 ```bash
 curl -X POST http://localhost:8000/v1/predictions -H "Content-Type: application/json" \
   -d '{"hour":14,"day_of_week":2,"weekend":0,"distance_km":3.5,"order_value_eur":89.9,"weight_kg":2.4,"stock_available":1,"preparation_time_min":18,"carrier_capacity":0.85,"weather":"normal","delivery_zone":"centre","customer_type":"premium"}'
-# {"order_id":"CMD-...","express_eligible":true,"decision":"oui","probability":0.9377,"model_version":"1.0.0",...}
+# {"order_id":"CMD-...","express_eligible":true,"decision":"oui","probability":0.9377,"model_version":"1.1.0",...}
 ```
 
 Arrêt : `docker compose down` (le modèle est conservé dans le volume `artifacts`).
@@ -122,7 +122,7 @@ Tous les paramètres sont lus depuis les variables d'environnement ou le fichier
 | --- | --- | --- |
 | `APP_ENV` | `dev` | Environnement courant (dev, test, prod) |
 | `LOG_LEVEL` | `INFO` | Niveau des logs (format JSON) |
-| `MODEL_VERSION` | `1.0.0` | Version du modèle entraîné et chargé |
+| `MODEL_VERSION` | `1.1.0` | Version du modèle entraîné et chargé |
 | `PREDICTION_THRESHOLD` | `0.5` | Seuil de décision oui/non |
 | `API_PORT` | `8000` | Port de l'API |
 | `N_ROWS` / `RANDOM_STATE` / `TEST_SIZE` | `6000` / `42` / `0.2` | Paramètres de génération et d'entraînement |

@@ -52,7 +52,7 @@ with DAG(
         ],
         {
             "DATA_PATH": "lake/gold/orders.parquet",
-            "MODEL_VERSION": os.environ.get("MODEL_VERSION", "1.0.0"),
+            "MODEL_VERSION": os.environ.get("MODEL_VERSION", "1.1.0"),
             "RETRAIN_MIN_NEW_ORDERS": os.environ.get("RETRAIN_MIN_NEW_ORDERS", "100"),
         },
     )

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     data_path: Path = Path("data/orders_dataset.csv")
     lake_dir: Path = Path("lake")
     artifacts_dir: Path = Path("artifacts")
-    model_version: str = "1.0.0"
+    model_version: str = "1.1.0"
     prediction_threshold: float = Field(default=0.5, ge=0, le=1)
 
     n_rows: int = Field(default=6000, gt=0)

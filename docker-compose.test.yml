@@ -64,7 +64,7 @@ services:
       context: .
       args:
         REQUIREMENTS: requirements-train.txt
-    image: express-delivery-train:${MODEL_VERSION:-1.0.0}
+    image: express-delivery-train:${MODEL_VERSION:-1.1.0}
     command: ["etl"]
     environment:
       APP_ENV: test
@@ -79,7 +79,7 @@ services:
   # Couche gold -> modèle (validation applicative avant entraînement)
   train:
     <<: *hardening
-    image: express-delivery-train:${MODEL_VERSION:-1.0.0}
+    image: express-delivery-train:${MODEL_VERSION:-1.1.0}
     command: ["train"]
     environment:
       APP_ENV: test
@@ -95,7 +95,7 @@ services:
   api:
     <<: *hardening
     build: .
-    image: express-delivery-api:${MODEL_VERSION:-1.0.0}
+    image: express-delivery-api:${MODEL_VERSION:-1.1.0}
     environment:
       APP_ENV: test
       MONGO_URI: mongodb://mongodb:27017
