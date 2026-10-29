@@ -25,3 +25,4 @@ class ErrorResponse(BaseModel):
     error: str
     message: str
     details: list[str] | None = None
+
